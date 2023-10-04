@@ -242,12 +242,12 @@ class TACGen(Visitor[TACFuncEmitter, None]):
 
         op = {
             node.BinaryOp.Add: tacop.TacBinaryOp.ADD,
-            node.BinaryOp.LogicOr: tacop.TacBinaryOp.LOR,
+            node.BinaryOp.LogicOr: tacop.TacBinaryOp.OR,
             node.BinaryOp.Sub: tacop.TacBinaryOp.SUB,
             node.BinaryOp.Mul: tacop.TacBinaryOp.MUL,
             node.BinaryOp.Div: tacop.TacBinaryOp.DIV,
             node.BinaryOp.Mod: tacop.TacBinaryOp.MOD,
-            node.BinaryOp.LogicAnd: tacop.TacBinaryOp.LAND,
+            node.BinaryOp.LogicAnd: tacop.TacBinaryOp.AND,
             node.BinaryOp.EQ: tacop.TacBinaryOp.EQU,
             node.BinaryOp.NE: tacop.TacBinaryOp.NEQ,
             node.BinaryOp.LT: tacop.TacBinaryOp.SLT,
