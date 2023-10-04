@@ -18,17 +18,18 @@ class ScopeKind(Enum):
 
 
 class Scope:
-    def __init__(self, kind: ScopeKind) -> None:
+    def __init__(self, kind: ScopeKind, father) -> None:
         self.kind = kind
         self.symbols = {}
+        self.father = father
 
     # To check if a symbol is declared in the scope.
     def containsKey(self, key: str) -> bool:
-        return key in self.symbols
+        return key in self.symbols or (self.father is not None and self.father.containsKey(key))
 
     # To get a symbol via its name.
     def get(self, key: str) -> Symbol:
-        return self.symbols[key]
+        return self.symbols.get(key, None) or self.father.get(key)
 
     # To declare a symbol.
     def declare(self, symbol: Symbol) -> None:
@@ -40,7 +41,11 @@ class Scope:
         return False
     
     # To get a symbol if declared in the scope
-    def lookup(self, name: str) -> Optional[Symbol]:
+    def lookup(self, name: str, strict: bool = False) -> Optional[Symbol]:
+        if strict:
+            if name in self.symbols:
+                return self.symbols[name]
+            return None
         if self.containsKey(name):
             return self.get(name)
         return None

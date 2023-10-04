@@ -28,6 +28,19 @@ class CFG:
         to find all the reachable basic blocks.
         """
 
+        self.reachable = set()
+
+        def dfs(node):
+            self.reachable.add(self.nodes[node])
+            for suc in self.links[node][1]:
+                if self.nodes[suc] not in self.reachable:
+                    dfs(suc)
+
+        dfs(0)
+
+    def isReachable(self, node: BasicBlock):
+        return node in self.reachable
+
     def getBlock(self, id):
         return self.nodes[id]
 

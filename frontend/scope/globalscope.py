@@ -9,7 +9,7 @@ Global scope stores all symbols of global variables and functions.
 
 class GlobalScopeType(Scope):
     def __init__(self) -> None:
-        super().__init__(ScopeKind.GLOBAL)
+        super().__init__(ScopeKind.GLOBAL, None)
         self.definedGlobalVar = {}
 
     def isGlobalScope(self) -> bool:

@@ -27,7 +27,7 @@ class Namer(Visitor[Scope, None]):
     def transform(self, program: Program) -> Program:
         # Global scope. You don't have to consider it until Step 6.
         program.globalScope = GlobalScope
-        ctx = Scope(program.globalScope)
+        ctx = Scope(program.globalScope, program.globalScope)
 
         program.accept(self, ctx)
         return program
@@ -41,9 +41,11 @@ class Namer(Visitor[Scope, None]):
             func.accept(self, ctx)
 
     def visitFunction(self, func: Function, ctx: Scope) -> None:
+        ctx = Scope(ScopeKind.LOCAL, ctx)
         func.body.accept(self, ctx)
 
     def visitBlock(self, block: Block, ctx: Scope) -> None:
+        ctx = Scope(ScopeKind.LOCAL, ctx)
         for child in block:
             child.accept(self, ctx)
 
@@ -95,7 +97,7 @@ class Namer(Visitor[Scope, None]):
         3. Set the 'symbol' attribute of decl.
         4. If there is an initial value, visit it.
         """
-        if ctx.lookup(decl.ident.value) is None:
+        if ctx.lookup(decl.ident.value, True) is None:
             var_symbol = VarSymbol(decl.ident.value, decl.var_t.type)
             ctx.declare(var_symbol)
             decl.symbol = var_symbol
