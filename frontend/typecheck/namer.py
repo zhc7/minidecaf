@@ -72,6 +72,14 @@ class Namer(Visitor[Scope, None]):
 
     def visitWhile(self, stmt: While, ctx: Scope) -> None:
         stmt.cond.accept(self, ctx)
+        ctx = Scope(ScopeKind.LOCAL, ctx, True)
+        stmt.body.accept(self, ctx)
+
+    def visitFor(self, stmt: For, ctx: Scope) -> None:
+        ctx = Scope(ScopeKind.LOCAL, ctx, True)
+        stmt.init.accept(self, ctx)
+        stmt.cond.accept(self, ctx)
+        stmt.after.accept(self, ctx)
         stmt.body.accept(self, ctx)
 
     def visitBreak(self, stmt: Break, ctx: Scope) -> None:
@@ -82,13 +90,18 @@ class Namer(Visitor[Scope, None]):
         if not in a loop:
             raise DecafBreakOutsideLoopError()
         """
-        raise NotImplementedError
+        if not ctx.in_loop:
+            raise DecafBreakOutsideLoopError()
 
     """
     def visitContinue(self, stmt: Continue, ctx: Scope) -> None:
     
     1. Refer to the implementation of visitBreak.
     """
+
+    def visitContinue(self, stmt: Continue, ctx: Scope) -> None:
+        if not ctx.in_loop:
+            raise DecafContinueOutsideLoopError()
 
     def visitDeclaration(self, decl: Declaration, ctx: Scope) -> None:
         """
