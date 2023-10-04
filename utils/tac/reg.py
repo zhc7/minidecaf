@@ -19,3 +19,12 @@ class Reg(Temp):
 
     def __str__(self) -> str:
         return self.name
+
+
+class Imm(Reg):
+    def __init__(self, value: int) -> None:
+        super().__init__(value, str(value))
+        self.value = value
+
+    def __str__(self) -> str:
+        return str(self.value)
