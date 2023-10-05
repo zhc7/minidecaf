@@ -39,8 +39,8 @@ class TACInstr:
         return self.kind == InstrKind.RET
 
     def toNative(self, dstRegs: list[Reg], srcRegs: list[Reg]) -> NativeInstr:
-        oldDsts = dstRegs
-        oldSrcs = srcRegs
+        oldDsts = self.dsts
+        oldSrcs = self.srcs
         self.dsts = dstRegs
         self.srcs = srcRegs
         instrString = self.__str__()
