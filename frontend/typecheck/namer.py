@@ -52,6 +52,8 @@ class Namer(Visitor[Scope, None]):
         assert ctx.isGlobalScope()
         assert ctx.lookup(func.ident.value, True) is None
         func_symbol = FuncSymbol(func.ident.value, func.ret_t.type, ctx)
+        for param in func.params:
+            func_symbol.addParaType(param.var_t.type)
         ctx.declare(func_symbol)
         func.symbol = func_symbol
         ctx = Scope(ScopeKind.LOCAL, ctx)
@@ -142,7 +144,11 @@ class Namer(Visitor[Scope, None]):
         expr.rhs.accept(self, ctx)
 
     def visitCall(self, call: Call, ctx: Scope) -> None:
-        if ctx.lookup(call.ident.value) is None:
+        symbol = ctx.lookup(call.ident.value)
+        if symbol is None or not symbol.isFunc:
+            raise DecafUndefinedFuncError(call.ident.value)
+        assert isinstance(symbol, FuncSymbol)
+        if symbol.parameterNum != len(call.args):
             raise DecafUndefinedFuncError(call.ident.value)
         for arg in call.args:
             arg.accept(self, ctx)
