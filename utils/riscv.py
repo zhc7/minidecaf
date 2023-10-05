@@ -1,4 +1,4 @@
-from typing import Final, Optional
+from typing import Final, Optional, List
 
 from utils.label.funclabel import FuncLabel
 from utils.label.label import Label, LabelKind
@@ -124,6 +124,20 @@ class Riscv:
         def __str__(self) -> str:
             return "mv " + Riscv.FMT2.format(str(self.dsts[0]), str(self.srcs[0]))
 
+    class LoadParams(TACInstr):
+        def __init__(self, dsts: List[Temp]) -> None:
+            super().__init__(InstrKind.SEQ, dsts, [], None)
+
+        def __str__(self):
+            return ""
+
+    class Call(TACInstr):
+        def __init__(self, func: Label, dst: Temp, srcs: List[Temp]) -> None:
+            super().__init__(InstrKind.SEQ, [dst], srcs, func)
+
+        def __str__(self) -> str:
+            return "call " + str(self.label.name)
+
     class Unary(TACInstr):
         def __init__(self, op: RvUnaryOp, dst: Temp, src: Temp) -> None:
             super().__init__(InstrKind.SEQ, [dst], [src], None)
@@ -159,6 +173,28 @@ class Riscv:
         
         def __str__(self) -> str:
             return "j " + str(self.target)
+
+    class StoreWord(TACInstr):
+        def __init__(self, src: Temp, base: Temp, offset: int) -> None:
+            super().__init__(InstrKind.SEQ, [], [src, base], None)
+            self.offset = offset
+
+        def __str__(self) -> str:
+            assert -2048 <= self.offset <= 2047
+            return "sw " + Riscv.FMT_OFFSET.format(
+                str(self.srcs[0]), str(self.offset), str(self.srcs[1])
+            )
+
+    class LoadWord(TACInstr):
+        def __init__(self, dst: Temp, base: Temp, offset: int) -> None:
+            super().__init__(InstrKind.LOAD_PARAMS, [dst], [base], None)
+            self.offset = offset
+
+        def __str__(self) -> str:
+            assert -2048 <= self.offset <= 2047
+            return "lw " + Riscv.FMT_OFFSET.format(
+                str(self.dsts[0]), str(self.offset), str(self.srcs[0])
+            )
 
     class SPAdd(NativeInstr):
         def __init__(self, offset: int) -> None:

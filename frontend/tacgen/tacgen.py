@@ -2,12 +2,13 @@ from frontend.ast.node import Optional
 from frontend.ast.tree import Function, Optional
 from frontend.ast import node
 from frontend.ast.tree import *
+from frontend.ast import tree
 from frontend.ast.visitor import Visitor
 from frontend.symbol.varsymbol import VarSymbol
 from frontend.type.array import ArrayType
 from utils.label.blocklabel import BlockLabel
 from utils.label.funclabel import FuncLabel
-from utils.tac import tacop
+from utils.tac import tacop, tacinstr
 from utils.tac.temp import Temp
 from utils.tac.tacinstr import *
 from utils.tac.tacfunc import TACFunc
@@ -49,6 +50,9 @@ class TACFuncEmitter(TACVisitor):
 
         self.continueLabelStack = []
         self.breakLabelStack = []
+
+        # load params
+        self.func.add(LoadParams([Temp(i) for i in range(numArgs)]))
 
     # To get a fresh new temporary variable.
     def freshTemp(self) -> Temp:
@@ -106,6 +110,11 @@ class TACFuncEmitter(TACVisitor):
     def visitMemo(self, content: str) -> None:
         self.func.add(Memo(content))
 
+    def visitCall(self, func: FuncLabel, args: List[Temp]) -> Temp:
+        temp = self.freshTemp()
+        self.func.add(Call(func, args, temp))
+        return temp
+
     def visitRaw(self, instr: TACInstr) -> None:
         self.func.add(instr)
 
@@ -141,7 +150,9 @@ class TACGen(Visitor[TACFuncEmitter, None]):
         tacFuncs = []
         for funcName, astFunc in program.functions().items():
             # in step9, you need to use real parameter count
-            emitter = TACFuncEmitter(FuncLabel(funcName), 0, labelManager)
+            emitter = TACFuncEmitter(FuncLabel(funcName), len(astFunc.params), labelManager)
+            for param in astFunc.params:
+                param.accept(self, emitter)
             astFunc.body.accept(self, emitter)
             tacFuncs.append(emitter.visitEnd())
         return TACProg(tacFuncs)
@@ -165,6 +176,11 @@ class TACGen(Visitor[TACFuncEmitter, None]):
         1. Set the 'val' attribute of ident as the temp variable of the 'symbol' attribute of ident.
         """
         ident.setattr("val", ident.symbol.temp)
+
+    def visitParameter(self, param: Parameter, mv: TACFuncEmitter) -> None:
+        symbol = param.symbol
+        temp = mv.freshTemp()
+        symbol.temp = temp
 
     def visitDeclaration(self, decl: Declaration, mv: TACFuncEmitter) -> None:
         """
@@ -245,6 +261,12 @@ class TACGen(Visitor[TACFuncEmitter, None]):
         mv.visitBranch(beginLabel)
         mv.visitLabel(breakLabel)
         mv.closeLoop()
+
+    def visitCall(self, call: tree.Call, mv: TACFuncEmitter) -> None:
+        for arg in call.args:
+            arg.accept(self, mv)
+        args = [arg.getattr("val") for arg in call.args]
+        call.setattr("val", mv.visitCall(FuncLabel(call.ident.value), args))
 
     def visitUnary(self, expr: Unary, mv: TACFuncEmitter) -> None:
         expr.operand.accept(self, mv)

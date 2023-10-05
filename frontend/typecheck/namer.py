@@ -27,7 +27,7 @@ class Namer(Visitor[Scope, None]):
     def transform(self, program: Program) -> Program:
         # Global scope. You don't have to consider it until Step 6.
         program.globalScope = GlobalScope
-        ctx = Scope(program.globalScope, program.globalScope)
+        ctx = program.globalScope  # Scope(program.globalScope, program.globalScope)
 
         program.accept(self, ctx)
         return program
@@ -40,8 +40,25 @@ class Namer(Visitor[Scope, None]):
         for func in program.functions().values():
             func.accept(self, ctx)
 
+    def visitParameter(self, param: Parameter, ctx: Scope) -> None:
+        if ctx.lookup(param.ident.value, True) is None:
+            param_symbol = VarSymbol(param.ident.value, param.var_t.type)
+            ctx.declare(param_symbol)
+            param.symbol = param_symbol
+        else:
+            raise DecafDeclConflictError(param.ident.value)
+
     def visitFunction(self, func: Function, ctx: Scope) -> None:
+        assert ctx.isGlobalScope()
+        if ctx.lookup(func.ident.value, True) is None:
+            func_symbol = FuncSymbol(func.ident.value, func.ret_t.type, ctx)
+            ctx.declare(func_symbol)
+            func.symbol = func_symbol
+        elif ctx.get(func.ident.value).type != func.ret_t.type:
+            raise DecafDeclConflictError(func.ident.value)
         ctx = Scope(ScopeKind.LOCAL, ctx)
+        for param in func.params:
+            param.accept(self, ctx)
         func.body.accept(self, ctx)
 
     def visitBlock(self, block: Block, ctx: Scope) -> None:
@@ -116,6 +133,8 @@ class Namer(Visitor[Scope, None]):
             decl.symbol = var_symbol
             if decl.init_expr is not NULL:
                 decl.init_expr.accept(self, ctx)
+        else:
+            raise DecafDeclConflictError(decl.ident.value)
 
     def visitAssignment(self, expr: Assignment, ctx: Scope) -> None:
         """
@@ -123,6 +142,12 @@ class Namer(Visitor[Scope, None]):
         """
         expr.lhs.accept(self, ctx)
         expr.rhs.accept(self, ctx)
+
+    def visitCall(self, call: Call, ctx: Scope) -> None:
+        if ctx.lookup(call.ident.value) is None:
+            raise DecafUndefinedFuncError(call.ident.value)
+        for arg in call.args:
+            arg.accept(self, ctx)
 
     def visitUnary(self, expr: Unary, ctx: Scope) -> None:
         expr.operand.accept(self, ctx)

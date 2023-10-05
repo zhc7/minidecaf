@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from typing import List
 
 from backend.subroutineinfo import SubroutineInfo
 from utils.label.label import Label
@@ -24,6 +25,21 @@ class SubroutineEmitter(ABC):
 
     @abstractmethod
     def emitComment(self, comment: str) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def readParam(self, params: List[Temp]):
+        raise NotImplementedError
+
+    @abstractmethod
+    def prepareParam(self, src: Reg):
+        raise NotImplementedError
+
+    def beforeCall(self):
+        raise NotImplementedError
+
+    @abstractmethod
+    def afterCall(self):
         raise NotImplementedError
 
     @abstractmethod

@@ -76,6 +76,12 @@ class RiscvAsmEmitter(AsmEmitter):
         def visitLoadImm4(self, instr: LoadImm4) -> None:
             self.seq.append(Riscv.LoadImm(instr.dst, instr.value))
 
+        def visitLoadParams(self, instr: LoadParams) -> None:
+            self.seq.append(Riscv.LoadParams(instr.dsts))
+
+        def visitCall(self, instr: Call) -> None:
+            self.seq.append(Riscv.Call(instr.func, instr.ret, instr.args))
+
         def visitUnary(self, instr: Unary) -> None:
             op = {
                 TacUnaryOp.NEG: RvUnaryOp.NEG,
@@ -143,8 +149,8 @@ class RiscvSubroutineEmitter(SubroutineEmitter):
     def __init__(self, emitter: RiscvAsmEmitter, info: SubroutineInfo) -> None:
         super().__init__(emitter, info)
         
-        # + 4 is for the RA reg 
-        self.nextLocalOffset = 4 * len(Riscv.CalleeSaved) + 4
+        # + 8 is for the RA and FP reg
+        self.nextLocalOffset = 4 * len(Riscv.CalleeSaved) + 8
         
         # the buf which stored all the NativeInstrs in this function
         self.buf: list[NativeInstr] = []
@@ -156,11 +162,32 @@ class RiscvSubroutineEmitter(SubroutineEmitter):
         self.printer.printLabel(info.funcLabel)
 
         # in step9, step11 you can compute the offset of local array and parameters here
+        self.nextParamOffset = 0
+        self.param_buf = []
 
     def emitComment(self, comment: str) -> None:
         # you can add some log here to help you debug
         pass
-    
+
+    def readParam(self, params: List[Temp]) -> None:
+        for i, param in enumerate(params):
+            self.offsets[param] = self.nextLocalOffset + 4 * i
+
+    def prepareParam(self, src: Reg) -> None:
+        self.param_buf.append(Riscv.NativeStoreWord(src, Riscv.SP, self.nextParamOffset))
+        self.nextParamOffset += 4
+
+    def beforeCall(self):
+        if self.nextParamOffset > 0:
+            self.buf.append(Riscv.SPAdd(-self.nextParamOffset))
+            self.buf.extend(self.param_buf)
+            self.param_buf = []
+
+    def afterCall(self) -> None:
+        if self.nextParamOffset > 0:
+            self.buf.append(Riscv.SPAdd(self.nextParamOffset))
+            self.nextParamOffset = 0
+
     # store some temp to stack
     # usually happen when reaching the end of a basicblock
     # in step9, you need to think about the fuction parameters here
@@ -194,6 +221,13 @@ class RiscvSubroutineEmitter(SubroutineEmitter):
     
     def emitEnd(self):
         self.printer.printComment("start of prologue")
+
+        # save FP reg
+        self.printer.printInstr(Riscv.NativeStoreWord(Riscv.FP, Riscv.SP,
+                                                      4 * len(Riscv.CalleeSaved) + 4 - self.nextLocalOffset))
+        # set FP reg
+        self.printer.printInstr(Riscv.Move(Riscv.FP, Riscv.SP))
+
         self.printer.printInstr(Riscv.SPAdd(-self.nextLocalOffset))
 
         # in step9, you need to think about how to store RA here
@@ -203,6 +237,7 @@ class RiscvSubroutineEmitter(SubroutineEmitter):
                 self.printer.printInstr(
                     Riscv.NativeStoreWord(Riscv.CalleeSaved[i], Riscv.SP, 4 * i)
                 )
+        self.printer.printInstr(Riscv.NativeStoreWord(Riscv.RA, Riscv.SP, 4 * len(Riscv.CalleeSaved)))
 
         self.printer.printComment("end of prologue")
         self.printer.println("")
@@ -229,6 +264,10 @@ class RiscvSubroutineEmitter(SubroutineEmitter):
                 self.printer.printInstr(
                     Riscv.NativeLoadWord(Riscv.CalleeSaved[i], Riscv.SP, 4 * i)
                 )
+
+        # resume FP and RA reg
+        self.printer.printInstr(Riscv.NativeLoadWord(Riscv.FP, Riscv.SP, 4 * len(Riscv.CalleeSaved) + 4))
+        self.printer.printInstr(Riscv.NativeLoadWord(Riscv.RA, Riscv.SP, 4 * len(Riscv.CalleeSaved)))
 
         self.printer.printInstr(Riscv.SPAdd(self.nextLocalOffset))
         self.printer.printComment("end of epilogue")
