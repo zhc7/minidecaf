@@ -104,6 +104,13 @@ def p_function_def(p):
     p[0] = Function(p[1], p[2], p[4], p[7])
 
 
+def p_function_decl(p):
+    """
+    function : type Identifier LParen params RParen Semi
+    """
+    p[0] = Function(p[1], p[2], p[4])
+
+
 def p_function_params_empty(p):
     """
     params : empty

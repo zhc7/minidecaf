@@ -120,7 +120,7 @@ class Function(Node):
         ret_t: TypeLiteral,
         ident: Identifier,
         params: List[Parameter],
-        body: Block,
+        body: Optional[Block] = None,
     ) -> None:
         super().__init__("function")
         self.ret_t = ret_t

@@ -59,6 +59,8 @@ class Namer(Visitor[Scope, None]):
         ctx = Scope(ScopeKind.LOCAL, ctx)
         for param in func.params:
             param.accept(self, ctx)
+        if func.body is None:
+            return
         self.visitBlock(func.body, ctx, False)
 
     def visitBlock(self, block: Block, ctx: Scope, new_scope: bool = True) -> None:
