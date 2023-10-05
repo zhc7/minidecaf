@@ -10,6 +10,7 @@ from typing import Any, Generic, Optional, TypeVar, Union, List
 
 from frontend.type import INT, DecafType
 from utils import T, U
+from utils.error import DecafDeclConflictError
 
 from .node import NULL, BinaryOp, Node, UnaryOp
 from .visitor import Visitor, accept
@@ -53,8 +54,32 @@ class Program(ListNode["Function"]):
     def __init__(self, *children: Function) -> None:
         super().__init__("program", list(children))
 
+    @staticmethod
+    def isSameFunc(func1: Function, func2: Function):
+        if func1.ret_t != func2.ret_t:
+            return False
+        if len(func1.params) != len(func2.params):
+            return False
+        for i in range(len(func1.params)):
+            if func1.params[i].var_t != func2.params[i].var_t:
+                return False
+        return True
+
     def functions(self) -> dict[str, Function]:
-        return {func.ident.value: func for func in self if isinstance(func, Function)}
+        # check uniqueness
+        funcs = {}
+        for func in self:
+            if func.ident.value in funcs:
+                func_original = funcs[func.ident.value]
+                if self.isSameFunc(func, func_original) and (func.body is None or func_original.body is None):
+                    if func.body is not None:
+                        funcs[func.ident.value] = func
+                else:
+                    raise DecafDeclConflictError(func.ident.value)
+            else:
+                funcs[func.ident.value] = func
+
+        return funcs
 
     def hasMainFunc(self) -> bool:
         return "main" in self.functions()

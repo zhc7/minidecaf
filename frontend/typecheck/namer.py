@@ -50,12 +50,10 @@ class Namer(Visitor[Scope, None]):
 
     def visitFunction(self, func: Function, ctx: Scope) -> None:
         assert ctx.isGlobalScope()
-        if ctx.lookup(func.ident.value, True) is None:
-            func_symbol = FuncSymbol(func.ident.value, func.ret_t.type, ctx)
-            ctx.declare(func_symbol)
-            func.symbol = func_symbol
-        elif ctx.get(func.ident.value).type != func.ret_t.type:
-            raise DecafDeclConflictError(func.ident.value)
+        assert ctx.lookup(func.ident.value, True) is None
+        func_symbol = FuncSymbol(func.ident.value, func.ret_t.type, ctx)
+        ctx.declare(func_symbol)
+        func.symbol = func_symbol
         ctx = Scope(ScopeKind.LOCAL, ctx)
         for param in func.params:
             param.accept(self, ctx)
