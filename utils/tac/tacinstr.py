@@ -207,7 +207,7 @@ class Mark(TACInstr):
 
 class Call(TACInstr):
     def __init__(self, func: FuncLabel, args: List[Temp], ret: Temp) -> None:
-        super().__init__(InstrKind.CALL, [ret], [], func)
+        super().__init__(InstrKind.SEQ, [ret], [], func)
         self.func = func
         self.args = args
         self.ret = ret
@@ -222,7 +222,7 @@ class Call(TACInstr):
 
 class LoadParams(TACInstr):
     def __init__(self, dsts: List[Temp]) -> None:
-        super().__init__(InstrKind.LOAD_PARAMS, dsts, [], None)
+        super().__init__(InstrKind.SEQ, dsts, [], None)
         self.num_args = len(dsts)
 
     def __str__(self) -> str:
