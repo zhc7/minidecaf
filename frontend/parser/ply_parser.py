@@ -41,24 +41,38 @@ def p_empty(p: yacc.YaccProduction):
 
 def p_program(p):
     """
-    program : functions
+    program : globals
     """
     p[0] = Program(*p[1])
 
 
-def p_function_single(p):
+def p_global_single(p):
     """
-    functions : function
+    globals : global
     """
     p[0] = [p[1]]
 
 
-def p_functions(p):
+def p_globals(p):
     """
-    functions : functions function
+    globals : globals global
     """
     p[0] = p[1]
     p[0].append(p[2])
+
+
+def p_global_function(p):
+    """
+    global : function
+    """
+    p[0] = p[1]
+
+
+def p_global_declaration(p):
+    """
+    global : declaration Semi
+    """
+    p[0] = p[1]
 
 
 def p_type(p):

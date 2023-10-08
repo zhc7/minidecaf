@@ -7,6 +7,7 @@ from utils.riscv import Riscv, RvBinaryOp, RvUnaryOp
 from utils.tac.reg import Reg, Imm
 from utils.tac.tacfunc import TACFunc
 from utils.tac.tacinstr import *
+from utils.tac.tacvar import TACVar
 from utils.tac.tacvisitor import TACVisitor
 
 from ..subroutineemitter import SubroutineEmitter
@@ -25,12 +26,9 @@ class RiscvAsmEmitter(AsmEmitter):
     ) -> None:
         super().__init__(allocatableRegs, callerSaveRegs)
 
-    
+
         # the start of the asm code
         # int step10, you need to add the declaration of global var here
-        self.printer.println(".text")
-        self.printer.println(".global main")
-        self.printer.println("")
 
     # transform tac instrs to RiscV instrs
     # collect some info which is saved in SubroutineInfo for SubroutineEmitter
@@ -62,7 +60,7 @@ class RiscvAsmEmitter(AsmEmitter):
         def visitOther(self, instr: TACInstr) -> None:
             raise NotImplementedError("RiscvInstrSelector visit{} not implemented".format(type(instr).__name__))
 
-        # in step11, you need to think about how to deal with globalTemp in almost all the visit functions. 
+        # in step11, you need to think about how to deal with globalTemp in almost all the visit functions.
         def visitReturn(self, instr: Return) -> None:
             if instr.value is not None:
                 self.seq.append(Riscv.Move(Riscv.A0, instr.value))
@@ -81,6 +79,12 @@ class RiscvAsmEmitter(AsmEmitter):
 
         def visitCall(self, instr: Call) -> None:
             self.seq.append(Riscv.Call(instr.func, instr.ret, instr.args))
+
+        def visitLoadSymbol(self, instr: LoadSymbol) -> None:
+            self.seq.append(Riscv.LoadSymbol(instr.dst, instr.name))
+
+        def visitLoad(self, instr: Load) -> None:
+            self.seq.append(Riscv.LoadAddr(instr.dst, instr.src))
 
         def visitUnary(self, instr: Unary) -> None:
             op = {
@@ -132,15 +136,47 @@ class RiscvAsmEmitter(AsmEmitter):
 
         def visitCondBranch(self, instr: CondBranch) -> None:
             self.seq.append(Riscv.Branch(instr.cond, instr.label))
-        
+
         def visitBranch(self, instr: Branch) -> None:
             self.seq.append(Riscv.Jump(instr.target))
 
         def visitAssign(self, instr: Assign) -> None:
             self.seq.append(Riscv.Move(instr.dst, instr.src))
 
+        def visitAddrAssign(self, instr: AddrAssign) -> None:
+            self.seq.append(Riscv.StoreWord(instr.src, instr.addr, 0))
+
         # in step9, you need to think about how to pass the parameters and how to store and restore callerSave regs
-        # in step11, you need to think about how to store the array 
+        # in step11, you need to think about how to store the array
+
+    def emitGlobalVars(self, variables: List[TACVar]):
+        self.printer.printComment("COMPILED BY ZHC")
+        self.printer.printComment("GlOBAL VAR")
+        self.printer.printSection("data")
+        for var in variables:
+            if not var.initialized:
+                continue
+            self.printer.printSection("globl", var.name)
+            self.printer.printLabel(Label(LabelKind.TEMP, var.name))
+            self.printer.println(f".word {var.value}")
+        self.printer.println("")
+
+        self.printer.printSection("bss")
+        for var in variables:
+            if var.initialized:
+                continue
+            self.printer.printSection("globl", var.name)
+            self.printer.printLabel(Label(LabelKind.TEMP, var.name))
+            self.printer.println(".space 4")
+        self.printer.println("")
+
+        self.printer.printSection("text")
+        self.printer.printSection("global", "main")
+        self.printer.println("")
+
+
+
+
 """
 RiscvAsmEmitter: an SubroutineEmitter for RiscV
 """
@@ -148,10 +184,10 @@ RiscvAsmEmitter: an SubroutineEmitter for RiscV
 class RiscvSubroutineEmitter(SubroutineEmitter):
     def __init__(self, emitter: RiscvAsmEmitter, info: SubroutineInfo) -> None:
         super().__init__(emitter, info)
-        
+
         # + 8 is for the RA and FP reg
         self.nextLocalOffset = 4 * len(Riscv.CalleeSaved) + 8
-        
+
         # the buf which stored all the NativeInstrs in this function
         self.buf: list[NativeInstr] = []
 
@@ -218,7 +254,7 @@ class RiscvSubroutineEmitter(SubroutineEmitter):
     def emitLabel(self, label: Label):
         self.buf.append(Riscv.RiscvLabel(label).toNative([], []))
 
-    
+
     def emitEnd(self):
         self.printer.printComment("start of prologue")
 

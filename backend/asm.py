@@ -17,6 +17,8 @@ class Asm:
     def transform(self, prog: TACProg):
         analyzer = LivenessAnalyzer()
 
+        self.emitter.emitGlobalVars(prog.variables)
+
         for func in prog.funcs:
             pair = self.emitter.selectInstr(func)
             builder = CFGBuilder()

@@ -39,3 +39,12 @@ class TACVisitor:
 
     def visitLoadParams(self, instr: LoadParams) -> None:
         self.visitOther(instr)
+
+    def visitLoadSymbol(self, instr: LoadSymbol) -> None:
+        self.visitOther(instr)
+
+    def visitLoad(self, instr: Load) -> None:
+        self.visitOther(instr)
+
+    def visitAddrAssign(self, instr: AddrAssign):
+        self.visitOther(instr)

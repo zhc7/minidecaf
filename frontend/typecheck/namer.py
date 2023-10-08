@@ -37,6 +37,9 @@ class Namer(Visitor[Scope, None]):
         if not program.hasMainFunc():
             raise DecafNoMainFuncError
 
+        for decl in program.declarations():
+            decl.accept(self, ctx)
+
         for func in program.functions().values():
             func.accept(self, ctx)
 
@@ -131,7 +134,7 @@ class Namer(Visitor[Scope, None]):
         4. If there is an initial value, visit it.
         """
         if ctx.lookup(decl.ident.value, True) is None:
-            var_symbol = VarSymbol(decl.ident.value, decl.var_t.type)
+            var_symbol = VarSymbol(decl.ident.value, decl.var_t.type, ctx.isGlobalScope())
             ctx.declare(var_symbol)
             decl.symbol = var_symbol
             if decl.init_expr is not NULL:

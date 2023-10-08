@@ -68,6 +68,20 @@ class Assign(TACInstr):
         v.visitAssign(self)
 
 
+class AddrAssign(TACInstr):
+    def __init__(self, addr: Temp, src: Temp, offset: int = 0) -> None:
+        super().__init__(InstrKind.SEQ, [], [src, addr], None)
+        self.addr = addr
+        self.src = src
+        self.offset = offset
+
+    def __str__(self) -> str:
+        return "%s[%d] = %s" % (self.addr, self.offset, self.src)
+
+    def accept(self, v: TACVisitor) -> None:
+        v.visitAddrAssign(self)
+
+
 # Loading an immediate 32-bit constant.
 class LoadImm4(TACInstr):
     def __init__(self, dst: Temp, value: int) -> None:
@@ -230,3 +244,29 @@ class LoadParams(TACInstr):
 
     def accept(self, v: TACVisitor) -> None:
         v.visitLoadParams(self)
+
+
+class LoadSymbol(TACInstr):
+    def __init__(self, dst: Temp, name: str) -> None:
+        super().__init__(InstrKind.SEQ, [dst], [], None)
+        self.dst = dst
+        self.name = name
+
+    def __str__(self) -> str:
+        return f"{self.dst} = &{self.name}"
+
+    def accept(self, v: TACVisitor) -> None:
+        v.visitLoadSymbol(self)
+
+
+class Load(TACInstr):
+    def __init__(self, dst: Temp, src: Temp) -> None:
+        super().__init__(InstrKind.SEQ, [dst], [src], None)
+        self.dst = dst
+        self.src = src
+
+    def __str__(self) -> str:
+        return f"{self.dst} = *{self.src}"
+
+    def accept(self, v: TACVisitor) -> None:
+        v.visitLoad(self)

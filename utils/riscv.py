@@ -157,12 +157,12 @@ class Riscv:
             return "{} ".format(self.op) + Riscv.FMT3.format(
                 str(self.dsts[0]), str(self.srcs[0]), str(self.srcs[1])
             )
-    
+
     class Branch(TACInstr):
         def __init__(self, cond: Temp, target: Label) -> None:
             super().__init__(InstrKind.COND_JMP, [], [cond], target)
             self.target = target
-        
+
         def __str__(self) -> str:
             return "beq " + Riscv.FMT3.format(str(Riscv.ZERO), str(self.srcs[0]), str(self.target))
 
@@ -170,7 +170,7 @@ class Riscv:
         def __init__(self, target: Label) -> None:
             super().__init__(InstrKind.JMP, [], [], target)
             self.target = target
-        
+
         def __str__(self) -> str:
             return "j " + str(self.target)
 
@@ -235,3 +235,19 @@ class Riscv:
 
         def __str__(self) -> str:
             return "ret"
+
+    class LoadSymbol(TACInstr):
+        def __init__(self, dst: Temp, name: str) -> None:
+            super().__init__(InstrKind.SEQ, [dst], [], None)
+            self.name = name
+
+        def __str__(self) -> str:
+            return "la " + Riscv.FMT2.format(str(self.dsts[0]), self.name)
+
+    class LoadAddr(TACInstr):
+        def __init__(self, dst: Temp, src: Temp, offset: int = 0) -> None:
+            super().__init__(InstrKind.SEQ, [dst], [src], None)
+            self.offset = offset
+
+        def __str__(self) -> str:
+            return "lw " + Riscv.FMT2.format(str(self.dsts[0]), f"{self.offset}({str(self.srcs[0])})")
