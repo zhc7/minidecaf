@@ -86,6 +86,9 @@ class RiscvAsmEmitter(AsmEmitter):
         def visitLoad(self, instr: Load) -> None:
             self.seq.append(Riscv.LoadAddr(instr.dst, instr.src))
 
+        def visitAlloc(self, instr: Alloc) -> None:
+            self.seq.append(Riscv.Alloc(instr.dst, instr.size))
+
         def visitUnary(self, instr: Unary) -> None:
             op = {
                 TacUnaryOp.NEG: RvUnaryOp.NEG,
@@ -167,7 +170,7 @@ class RiscvAsmEmitter(AsmEmitter):
                 continue
             self.printer.printSection("globl", var.name)
             self.printer.printLabel(Label(LabelKind.TEMP, var.name))
-            self.printer.println(".space 4")
+            self.printer.println(f".space {var.size}")
         self.printer.println("")
 
         self.printer.printSection("text")
@@ -212,6 +215,11 @@ class RiscvSubroutineEmitter(SubroutineEmitter):
     def prepareParam(self, src: Reg) -> None:
         self.param_buf.append(Riscv.NativeStoreWord(src, Riscv.SP, self.nextParamOffset))
         self.nextParamOffset += 4
+
+    def alloc(self, dst: Reg, size: int) -> None:
+        self.buf.append(Riscv.LoadImm(dst, self.nextLocalOffset).toNative([dst], []))
+        self.buf.append(Riscv.Binary(RvBinaryOp.ADD, dst, dst, Riscv.SP).toNative([dst], [dst, Riscv.SP]))
+        self.nextLocalOffset += size
 
     def beforeCall(self):
         if self.nextParamOffset > 0:

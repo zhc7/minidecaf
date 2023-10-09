@@ -6,14 +6,17 @@ Modify this file if you want to add a new AST node.
 
 from __future__ import annotations
 
+from array import ArrayType
+from symtable import Symbol
 from typing import Any, Generic, Optional, TypeVar, Union, List
 
-from frontend.type import INT, DecafType
+from frontend.type import INT, DecafType, ArrayType
 from utils import T, U
 from utils.error import DecafDeclConflictError
 
 from .node import NULL, BinaryOp, Node, UnaryOp
 from .visitor import Visitor, accept
+from ..symbol.varsymbol import VarSymbol
 
 _T = TypeVar("_T", bound=Node)
 U = TypeVar("U", covariant=True)
@@ -315,6 +318,7 @@ class Declaration(Node):
     """
     AST node of declaration.
     """
+    symbol: VarSymbol
 
     def __init__(
         self,
@@ -335,6 +339,20 @@ class Declaration(Node):
 
     def accept(self, v: Visitor[T, U], ctx: T):
         return v.visitDeclaration(self, ctx)
+
+
+class ArrayDeclaring:
+    def __init__(self, var_t: TypeLiteral, ident: Identifier, length: IntLiteral) -> None:
+        self.var_t = var_t
+        self.ident = ident
+        self.lengths = [length.value]
+        if length.value <= 0:
+            raise ValueError("array length must be positive")
+
+    def append(self, length: IntLiteral) -> None:
+        if length.value <= 0:
+            raise ValueError("array length must be positive")
+        self.lengths.append(length.value)
 
 
 class Expression(Node):
@@ -435,8 +453,10 @@ class Assignment(Binary):
     It's actually a kind of binary expression, but it'll make things easier if we use another accept method to handle it.
     """
 
-    def __init__(self, lhs: Identifier, rhs: Expression) -> None:
+    def __init__(self, lhs: Union[Identifier, ArrayIndex], rhs: Expression) -> None:
         super().__init__(BinaryOp.Assign, lhs, rhs)
+        # for IDE typing check
+        self.lhs = lhs
 
     def accept(self, v: Visitor[T, U], ctx: T):
         return v.visitAssignment(self, ctx)
@@ -478,6 +498,7 @@ class Identifier(Expression):
     """
     AST node of identifier "expression".
     """
+    symbol: VarSymbol
 
     def __init__(self, value: str) -> None:
         super().__init__("identifier")
@@ -554,3 +575,55 @@ class TInt(TypeLiteral):
 
     def accept(self, v: Visitor[T, U], ctx: T):
         return v.visitTInt(self, ctx)
+
+
+class TArray(TypeLiteral):
+    """
+    AST node of array types
+    """
+    def __init__(self, _type: ArrayType):
+        super().__init__("type_array", _type)
+
+    def __getitem__(self, key: int) -> Node:
+        raise _index_len_err(key, self)
+
+    def __len__(self) -> int:
+        return 0
+
+    def accept(self, v: Visitor[T, U], ctx: T):
+        return v.visitTArray(self, ctx)
+
+
+class ArrayDeclaration(Declaration):
+    """
+    AST node of array declaration.
+    """
+
+    def __init__(
+        self,
+        declaring: ArrayDeclaring,
+    ) -> None:
+        var_t = ArrayType.multidim(declaring.var_t.type, *declaring.lengths)
+        var_t = TArray(var_t)
+        super().__init__(var_t, declaring.ident)
+
+
+class ArrayIndex(Node):
+    """
+    AST node of array indexing
+    """
+    symbol: VarSymbol
+
+    def __init__(self, base: Union[Identifier, ArrayIndex], index: Expression):
+        super().__init__("array index")
+        self.base = base
+        self.index = index
+
+    def __len__(self) -> int:
+        return 2
+
+    def __getitem__(self, key: int) -> Node:
+        return (self.base, self.index)[key]
+
+    def accept(self, v: Visitor[T, U], ctx: T) -> Optional[U]:
+        return v.visitArrayIndex(self, ctx)

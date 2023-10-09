@@ -131,6 +131,14 @@ class Riscv:
         def __str__(self):
             return ""
 
+    class Alloc(TACInstr):
+        def __init__(self, dst: Temp, size: int) -> None:
+            super().__init__(InstrKind.SEQ, [dst], [], None)
+            self.size = size
+
+        def __str__(self) -> str:
+            return ""
+
     class Call(TACInstr):
         def __init__(self, func: Label, dst: Temp, srcs: List[Temp]) -> None:
             super().__init__(InstrKind.SEQ, [dst], srcs, func)

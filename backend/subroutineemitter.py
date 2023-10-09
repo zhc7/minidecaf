@@ -61,3 +61,6 @@ class SubroutineEmitter(ABC):
     @abstractmethod
     def emitEnd(self):
         raise NotImplementedError
+
+    def alloc(self, dst: Reg, size: int):
+        raise NotImplementedError

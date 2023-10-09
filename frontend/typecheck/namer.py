@@ -142,6 +142,12 @@ class Namer(Visitor[Scope, None]):
         else:
             raise DecafDeclConflictError(decl.ident.value)
 
+    def visitArrayIndex(self, idx: ArrayIndex, ctx: Scope):
+        idx.base.accept(self, ctx)
+        idx.index.accept(self, ctx)
+        base_symbol = idx.base.symbol
+        idx.symbol = VarSymbol("indexed_" + base_symbol.name, base_symbol.type.indexed)
+
     def visitAssignment(self, expr: Assignment, ctx: Scope) -> None:
         """
         1. Refer to the implementation of visitBinary.

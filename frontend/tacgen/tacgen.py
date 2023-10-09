@@ -55,6 +55,9 @@ class TACFuncEmitter(TACVisitor):
         # load params
         self.func.add(LoadParams([Temp(i) for i in range(numArgs)]))
 
+        # mark left or right value
+        self.right = True
+
     # To get a fresh new temporary variable.
     def freshTemp(self) -> Temp:
         temp = Temp(self.nextTempId)
@@ -79,7 +82,7 @@ class TACFuncEmitter(TACVisitor):
         self.func.add(AddrAssign(dst, src))
         return src
 
-    def visitLoad(self, value: Union[int, str]) -> Temp:
+    def visitLoadImm(self, value: Union[int, str]) -> Temp:
         temp = self.freshTemp()
         self.func.add(LoadImm4(temp, value))
         return temp
@@ -124,6 +127,11 @@ class TACFuncEmitter(TACVisitor):
         dst = self.freshTemp()
         self.func.add(Load(dst, addr))
         return dst
+
+    def visitAlloc(self, size: int) -> Temp:
+        temp = self.freshTemp()
+        self.func.add(Alloc(temp, size))
+        return temp
 
     def visitCall(self, func: FuncLabel, args: List[Temp]) -> Temp:
         temp = self.freshTemp()
@@ -172,7 +180,7 @@ class TACGen(Visitor[TACFuncEmitter, None]):
                 if isinstance(var.init_expr, IntLiteral):
                     value = var.init_expr.value
                     init = True
-            tacVars.append(TACVar(var.symbol.name, value, init))
+            tacVars.append(TACVar(var.symbol.name, value, init, var.symbol.type.size))
 
         for funcName, astFunc in program.functions().items():
             # in step9, you need to use real parameter count
@@ -201,12 +209,16 @@ class TACGen(Visitor[TACFuncEmitter, None]):
         """
         1. Set the 'val' attribute of ident as the temp variable of the 'symbol' attribute of ident.
         """
+        if mv.right and isinstance(ident.symbol.type, ArrayType):
+            raise NotImplementedError("Cannot get rvalue of an array")
         if ident.symbol.isGlobal:
             addr = mv.visitGlobalVar(ident.symbol)
-            ident.symbol.temp = addr
-            ident.setattr("val", mv.visitAddr(ident.symbol.temp))
+            ident.symbol.addr = addr
+            if mv.right:
+                ident.setattr("val", mv.visitAddr(ident.symbol.addr))
         else:
-            ident.setattr("val", ident.symbol.temp)
+            if mv.right:
+                ident.setattr("val", ident.symbol.temp)
 
     def visitParameter(self, param: Parameter, mv: TACFuncEmitter) -> None:
         symbol = param.symbol
@@ -220,11 +232,40 @@ class TACGen(Visitor[TACFuncEmitter, None]):
         3. If the declaration has an initial value, use mv.visitAssignment to set it.
         """
         symbol = decl.symbol
-        temp = mv.freshTemp()
-        symbol.temp = temp
+        if isinstance(decl, ArrayDeclaration):
+            addr = mv.visitAlloc(symbol.type.size)
+            symbol.addr = addr
+        else:
+            temp = mv.freshTemp()
+            symbol.temp = temp
         if decl.init_expr is not NULL:
             decl.init_expr.accept(self, mv)
             mv.visitAssignment(temp, decl.init_expr.getattr("val"))
+
+    def visitArrayIndex(self, idx: ArrayIndex, mv: TACFuncEmitter) -> None:
+        # save father command
+        right = mv.right
+        # we only need left value of base
+        mv.right = False
+        idx.base.accept(self, mv)
+        # we need right value of index
+        mv.right = True
+        idx.index.accept(self, mv)
+        base_symbol = idx.base.symbol
+        addr = mv.visitBinary(
+            tacop.TacBinaryOp.ADD,
+            base_symbol.addr,
+            mv.visitBinary(
+                tacop.TacBinaryOp.MUL,
+                idx.index.getattr("val"),
+                mv.visitLoadImm(idx.symbol.type.size),
+            ),
+        )
+        idx.symbol.addr = addr
+        if right:
+            if isinstance(idx.symbol.type, ArrayType):
+                raise NotImplementedError("Don't support array assigning currently")
+            idx.setattr("val", mv.visitAddr(addr))
 
     def visitAssignment(self, expr: Assignment, mv: TACFuncEmitter) -> None:
         """
@@ -233,13 +274,16 @@ class TACGen(Visitor[TACFuncEmitter, None]):
         3. Set the 'val' attribute of expr as the value of assignment instruction.
         """
         expr.rhs.accept(self, mv)
-        if expr.lhs.symbol.isGlobal:
-            addr = mv.visitGlobalVar(expr.lhs.symbol)
-            expr.lhs.symbol.temp = addr
-            result = mv.visitAddrAssignment(expr.lhs.symbol.temp, expr.rhs.getattr("val"))
+        mv.right = False
+        expr.lhs.accept(self, mv)
+        mv.right = True
+        symbol = expr.lhs.symbol
+        if isinstance(symbol.type, ArrayType):
+            raise NotImplementedError("Don't support array assigning currently")
+        if hasattr(symbol, "addr"):
+            result = mv.visitAddrAssignment(symbol.addr, expr.rhs.getattr("val"))
         else:
-            temp = expr.lhs.symbol.temp
-            result = mv.visitAssignment(temp, expr.rhs.getattr("val"))
+            result = mv.visitAssignment(symbol.temp, expr.rhs.getattr("val"))
         expr.setattr("val", result)
 
     def visitIf(self, stmt: If, mv: TACFuncEmitter) -> None:
@@ -361,4 +405,4 @@ class TACGen(Visitor[TACFuncEmitter, None]):
         expr.setattr("val", temp)
 
     def visitIntLiteral(self, expr: IntLiteral, mv: TACFuncEmitter) -> None:
-        expr.setattr("val", mv.visitLoad(expr.value))
+        expr.setattr("val", mv.visitLoadImm(expr.value))

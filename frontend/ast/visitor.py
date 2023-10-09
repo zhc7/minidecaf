@@ -85,6 +85,12 @@ class Visitor(Protocol[T, U]):  # type: ignore
     def visitTInt(self, that: TInt, ctx: T) -> Optional[U]:
         return self.visitOther(that, ctx)
 
+    def visitTArray(self, that: TArray, ctx: T) -> Optional[U]:
+        return self.visitOther(that, ctx)
+
+    def visitArrayIndex(self, that: ArrayIndex, ctx: T):
+        return self.visitOther(that, ctx)
+
 
 class RecursiveVisitor(Visitor[T, U]):
     def visitOther(self, node: Node, ctx: T) -> Optional[Sequence[Optional[U]]]:

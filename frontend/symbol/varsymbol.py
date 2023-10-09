@@ -8,9 +8,11 @@ Variable symbol, representing a variable definition.
 
 
 class VarSymbol(Symbol):
+    temp: Temp
+    addr: Temp
+
     def __init__(self, name: str, type: DecafType, isGlobal: bool = False) -> None:
         super().__init__(name, type)
-        self.temp: Temp
         self.isGlobal = isGlobal
         self.initValue = 0
 

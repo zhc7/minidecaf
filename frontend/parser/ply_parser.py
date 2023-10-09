@@ -84,9 +84,30 @@ def p_type(p):
 
 def p_function_call(p):
     """
-    primary : Identifier LParen args RParen
+    postfix : Identifier LParen args RParen
     """
     p[0] = Call(p[1], p[3])
+
+
+def p_array_index(p):
+    """
+    postfix : array_index
+    """
+    p[0] = p[1]
+
+
+def p_array_index_single(p):
+    """
+    array_index : Identifier LBracket expression RBracket
+    """
+    p[0] = ArrayIndex(p[1], p[3])
+
+
+def p_array_index_multi(p):
+    """
+    array_index : array_index LBracket expression RBracket
+    """
+    p[0] = ArrayIndex(p[1], p[3])
 
 
 def p_function_call_args_empty(p):
@@ -275,6 +296,28 @@ def p_declaration(p):
     p[0] = Declaration(p[1], p[2])
 
 
+def p_declaration_array(p):
+    """
+    declaration : array_decl
+    """
+    p[0] = ArrayDeclaration(p[1])
+
+
+def p_declaration_array_single(p):
+    """
+    array_decl : type Identifier LBracket Integer RBracket
+    """
+    p[0] = ArrayDeclaring(p[1], p[2], p[4])
+
+
+def p_declaration_array_multi(p):
+    """
+    array_decl : array_decl LBracket Integer RBracket
+    """
+    p[1].append(p[3])
+    p[0] = p[1]
+
+
 def p_declaration_init(p):
     """
     declaration : type Identifier Assign expression
@@ -314,6 +357,7 @@ def p_unary_expression(p):
 def p_binary_expression(p):
     """
     assignment : Identifier Assign expression
+        | unary Assign expression
     logical_or : logical_or Or logical_and
     logical_and : logical_and And bit_or
     bit_or : bit_or BitOr xor

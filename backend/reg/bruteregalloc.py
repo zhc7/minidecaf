@@ -125,7 +125,6 @@ class BruteRegAlloc(RegAlloc):
                     self.bind(instr.dsts[0], Riscv.A0)
             else:
                 self.allocForLoc(loc, subEmitter)
-
         for tempindex in bb.liveOut:
             if tempindex in self.bindings:
                 subEmitter.emitStoreToStack(self.bindings.get(tempindex))
@@ -157,7 +156,10 @@ class BruteRegAlloc(RegAlloc):
             else:
                 dstRegs.append(self.allocRegFor(temp, False, loc.liveIn, subEmitter))
 
-        subEmitter.emitNative(instr.toNative(dstRegs, srcRegs))
+        if isinstance(instr, Riscv.Alloc):
+            subEmitter.alloc(dstRegs[0], instr.size)
+        else:
+            subEmitter.emitNative(instr.toNative(dstRegs, srcRegs))
 
     def allocRegFor(
         self, temp: Temp, isRead: bool, live: set[int], subEmitter: SubroutineEmitter
