@@ -89,7 +89,17 @@ class BruteRegAlloc(RegAlloc):
                     else:
                         subEmitter.emitLoadFromStack(dst, src)
                 for i in range(8, len(instr.srcs)):
-                    subEmitter.prepareParam(instr.srcs[i])
+                    src = instr.srcs[i]
+                    if src.index in self.bindings:
+                        src = self.bindings[src.index]
+                    if not isinstance(src, Reg):
+                        for reg in self.emitter.allocatableRegs:
+                            if reg not in Riscv.ArgRegs and (not reg.occupied or reg.temp.index not in loc.liveIn):
+                                subEmitter.emitLoadFromStack(reg, src)
+                                self.bind(src, reg)
+                                src = reg
+                                break
+                    subEmitter.prepareParam(src)
 
                 # 2. save callerSave regs
                 for reg in Riscv.CallerSaved:

@@ -171,7 +171,7 @@ class RiscvSubroutineEmitter(SubroutineEmitter):
 
     def readParam(self, params: List[Temp]) -> None:
         for i, param in enumerate(params):
-            self.offsets[param] = self.nextLocalOffset + 4 * i
+            self.offsets[param.index] = self.nextLocalOffset + 4 * i
 
     def prepareParam(self, src: Reg) -> None:
         self.param_buf.append(Riscv.NativeStoreWord(src, Riscv.SP, self.nextParamOffset))
