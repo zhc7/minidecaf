@@ -78,8 +78,8 @@ class TACFuncEmitter(TACVisitor):
         self.func.add(Assign(dst, src))
         return src
 
-    def visitAddrAssignment(self, dst: Temp, src: Temp) -> Temp:
-        self.func.add(AddrAssign(dst, src))
+    def visitAddrAssignment(self, addr: Temp, src: Temp, offset: int = 0) -> Temp:
+        self.func.add(AddrAssign(addr, src, offset))
         return src
 
     def visitLoadImm(self, value: Union[int, str]) -> Temp:
@@ -138,6 +138,12 @@ class TACFuncEmitter(TACVisitor):
         self.func.add(Call(func, args, temp))
         return temp
 
+    def visitArrayInit(self, addr: Temp, size: int, init: List[Temp]):
+        temp = self.visitLoadImm(int(size / 4))
+        self.func.add(Memset(addr, temp))
+        for i, tmp in enumerate(init):
+            self.visitAddrAssignment(addr, tmp, 4 * i)
+
     def visitRaw(self, instr: TACInstr) -> None:
         self.func.add(instr)
 
@@ -180,6 +186,11 @@ class TACGen(Visitor[TACFuncEmitter, None]):
                 if isinstance(var.init_expr, IntLiteral):
                     value = var.init_expr.value
                     init = True
+                elif isinstance(var.init_expr, ArrayInit):
+                    assert isinstance(var.var_t.type, ArrayType)
+                    value = [expr.value for expr in var.init_expr]
+                    value += [0] * (var.var_t.type.length - len(value))
+                    init = True
             tacVars.append(TACVar(var.symbol.name, value, init, var.symbol.type.size))
 
         for funcName, astFunc in program.functions().items():
@@ -209,21 +220,32 @@ class TACGen(Visitor[TACFuncEmitter, None]):
         """
         1. Set the 'val' attribute of ident as the temp variable of the 'symbol' attribute of ident.
         """
-        if mv.right and isinstance(ident.symbol.type, ArrayType):
-            raise NotImplementedError("Cannot get rvalue of an array")
         if ident.symbol.isGlobal:
             addr = mv.visitGlobalVar(ident.symbol)
             ident.symbol.addr = addr
             if mv.right:
-                ident.setattr("val", mv.visitAddr(ident.symbol.addr))
+                if isinstance(ident.symbol.type, ArrayType):
+                    ident.setattr("val", ident.symbol.addr)
+                else:
+                    ident.setattr("val", mv.visitAddr(ident.symbol.addr))
+        elif mv.right and isinstance(ident.symbol.type, ArrayType):
+            ident.setattr("val", ident.symbol.addr)
         else:
             if mv.right:
                 ident.setattr("val", ident.symbol.temp)
 
     def visitParameter(self, param: Parameter, mv: TACFuncEmitter) -> None:
         symbol = param.symbol
-        temp = mv.freshTemp()
-        symbol.temp = temp
+        if isinstance(symbol.type, ArrayType):
+            addr = mv.freshTemp()
+            symbol.addr = addr
+        else:
+            temp = mv.freshTemp()
+            symbol.temp = temp
+
+    def visitArrayInit(self, init: ArrayInit, mv: TACFuncEmitter) -> None:
+        for child in init.children:
+            child.accept(self, mv)
 
     def visitDeclaration(self, decl: Declaration, mv: TACFuncEmitter) -> None:
         """
@@ -235,12 +257,16 @@ class TACGen(Visitor[TACFuncEmitter, None]):
         if isinstance(decl, ArrayDeclaration):
             addr = mv.visitAlloc(symbol.type.size)
             symbol.addr = addr
+            if decl.init_expr is not NULL:
+                decl.init_expr.accept(self, mv)
+                temps = [expr.getattr("val") for expr in decl.init_expr]
+                mv.visitArrayInit(addr, symbol.type.size, temps)
         else:
             temp = mv.freshTemp()
             symbol.temp = temp
-        if decl.init_expr is not NULL:
-            decl.init_expr.accept(self, mv)
-            mv.visitAssignment(temp, decl.init_expr.getattr("val"))
+            if decl.init_expr is not NULL:
+                decl.init_expr.accept(self, mv)
+                mv.visitAssignment(temp, decl.init_expr.getattr("val"))
 
     def visitArrayIndex(self, idx: ArrayIndex, mv: TACFuncEmitter) -> None:
         # save father command

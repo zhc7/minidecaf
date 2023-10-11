@@ -38,6 +38,7 @@ class RvBinaryOp(Enum):
 
 class Riscv:
 
+    MEMSET = FuncLabel("__riscv_memset__")
     ZERO = Reg(0, "x0")  # always zero
     RA = Reg(1, "ra")  # return address
     SP = Reg(2, "sp")  # stack pointer
@@ -167,12 +168,13 @@ class Riscv:
             )
 
     class Branch(TACInstr):
-        def __init__(self, cond: Temp, target: Label) -> None:
+        def __init__(self, cond: Temp, target: Label, cmp: Temp = None) -> None:
             super().__init__(InstrKind.COND_JMP, [], [cond], target)
             self.target = target
+            self.cmp = cmp or Riscv.ZERO
 
         def __str__(self) -> str:
-            return "beq " + Riscv.FMT3.format(str(Riscv.ZERO), str(self.srcs[0]), str(self.target))
+            return "beq " + Riscv.FMT3.format(str(self.cmp), str(self.srcs[0]), str(self.target))
 
     class Jump(TACInstr):
         def __init__(self, target: Label) -> None:

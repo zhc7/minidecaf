@@ -51,3 +51,6 @@ class TACVisitor:
 
     def visitAlloc(self, instr: Alloc) -> None:
         self.visitOther(instr)
+
+    def visitMemset(self, instr: Memset) -> None:
+        self.visitOther(instr)

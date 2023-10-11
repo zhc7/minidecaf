@@ -105,6 +105,8 @@ class Parameter(Node):
     """
     AST node that represents a function parameter.
     """
+    symbol: VarSymbol
+
     def __init__(self, var_t: TypeLiteral, ident: Identifier) -> None:
         super().__init__("parameter")
         self.var_t = var_t
@@ -169,6 +171,7 @@ class Return(Statement):
     """
     AST node of return statement.
     """
+    type: DecafType
 
     def __init__(self, expr: Expression) -> None:
         super().__init__("return")
@@ -303,6 +306,7 @@ class Block(Statement, ListNode[Union["Statement", "Declaration"]]):
     """
     AST node of block "statement".
     """
+    type: DecafType
 
     def __init__(self, *children: Union[Statement, Declaration]) -> None:
         super().__init__("block", list(children))
@@ -342,11 +346,11 @@ class Declaration(Node):
 
 
 class ArrayDeclaring:
-    def __init__(self, var_t: TypeLiteral, ident: Identifier, length: IntLiteral) -> None:
+    def __init__(self, var_t: TypeLiteral, ident: Identifier, length: Optional[IntLiteral] = None) -> None:
         self.var_t = var_t
         self.ident = ident
-        self.lengths = [length.value]
-        if length.value <= 0:
+        self.lengths = [length.value] if length is not None else [None]
+        if length is not None and length.value <= 0:
             raise ValueError("array length must be positive")
 
     def append(self, length: IntLiteral) -> None:
@@ -594,6 +598,22 @@ class TArray(TypeLiteral):
         return v.visitTArray(self, ctx)
 
 
+class ArrayInit(ListNode[Expression]):
+    """
+    AST node of array initialization.
+    """
+    type: DecafType
+
+    def __init__(self, *children: Expression) -> None:
+        super().__init__("array_init", list(children))
+
+    def append(self, expr: Expression) -> None:
+        self.children.append(expr)
+
+    def accept(self, v: Visitor[T, U], ctx: T):
+        return v.visitArrayInit(self, ctx)
+
+
 class ArrayDeclaration(Declaration):
     """
     AST node of array declaration.
@@ -602,13 +622,25 @@ class ArrayDeclaration(Declaration):
     def __init__(
         self,
         declaring: ArrayDeclaring,
+        init: Optional[ArrayInit] = None,
     ) -> None:
+        var_t = ArrayType.multidim(declaring.var_t.type, *declaring.lengths)
+        var_t = TArray(var_t)
+        super().__init__(var_t, declaring.ident)
+        self.init_expr = init or NULL
+
+
+class ArrayParameter(Parameter):
+    """
+    AST node that represents a function parameter.
+    """
+    def __init__(self, declaring: ArrayDeclaring) -> None:
         var_t = ArrayType.multidim(declaring.var_t.type, *declaring.lengths)
         var_t = TArray(var_t)
         super().__init__(var_t, declaring.ident)
 
 
-class ArrayIndex(Node):
+class ArrayIndex(Expression):
     """
     AST node of array indexing
     """

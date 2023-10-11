@@ -162,6 +162,7 @@ class Namer(Visitor[Scope, None]):
         assert isinstance(symbol, FuncSymbol)
         if symbol.parameterNum != len(call.args):
             raise DecafUndefinedFuncError(call.ident.value)
+        call.ident.symbol = symbol
         for arg in call.args:
             arg.accept(self, ctx)
 

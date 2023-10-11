@@ -25,8 +25,6 @@ class RiscvAsmEmitter(AsmEmitter):
         callerSaveRegs: list[Reg],
     ) -> None:
         super().__init__(allocatableRegs, callerSaveRegs)
-
-
         # the start of the asm code
         # int step10, you need to add the declaration of global var here
 
@@ -89,6 +87,9 @@ class RiscvAsmEmitter(AsmEmitter):
         def visitAlloc(self, instr: Alloc) -> None:
             self.seq.append(Riscv.Alloc(instr.dst, instr.size))
 
+        def visitMemset(self, instr: Memset) -> None:
+            self.seq.append(Riscv.Call(Riscv.MEMSET, Riscv.ZERO, [instr.addr, Riscv.ZERO, instr.size]))
+
         def visitUnary(self, instr: Unary) -> None:
             op = {
                 TacUnaryOp.NEG: RvUnaryOp.NEG,
@@ -147,13 +148,28 @@ class RiscvAsmEmitter(AsmEmitter):
             self.seq.append(Riscv.Move(instr.dst, instr.src))
 
         def visitAddrAssign(self, instr: AddrAssign) -> None:
-            self.seq.append(Riscv.StoreWord(instr.src, instr.addr, 0))
+            self.seq.append(Riscv.StoreWord(instr.src, instr.addr, instr.offset))
 
         # in step9, you need to think about how to pass the parameters and how to store and restore callerSave regs
         # in step11, you need to think about how to store the array
 
+    def emitMemsetFunc(self):
+        self.printer.printLabel(Riscv.MEMSET)
+        self.printer.printInstr(Riscv.LoadImm(Riscv.A4, 4))
+        self.printer.printInstr(Riscv.Binary(RvBinaryOp.MUL, Riscv.A2, Riscv.A2, Riscv.A4))
+        self.printer.printInstr(Riscv.Binary(RvBinaryOp.ADD, Riscv.A3, Riscv.A0, Riscv.A2))
+        self.printer.printLabel(Label(LabelKind.TEMP, "memset_loop"))
+        self.printer.printInstr(Riscv.Branch(Riscv.A3, Label(LabelKind.TEMP, "memset_end"), Riscv.A0))
+        self.printer.printInstr(Riscv.Binary(RvBinaryOp.SUB, Riscv.A3, Riscv.A3, Riscv.A4))
+        self.printer.printInstr(Riscv.NativeStoreWord(Riscv.A1, Riscv.A3, 0))
+        self.printer.printInstr(Riscv.Jump(Label(LabelKind.TEMP, "memset_loop")))
+        self.printer.printLabel(Label(LabelKind.TEMP, "memset_end"))
+        self.printer.printInstr(Riscv.NativeReturn())
+        self.printer.println("")
+
     def emitGlobalVars(self, variables: List[TACVar]):
         self.printer.printComment("COMPILED BY ZHC")
+        self.emitMemsetFunc()
         self.printer.printComment("GlOBAL VAR")
         self.printer.printSection("data")
         for var in variables:
@@ -178,11 +194,10 @@ class RiscvAsmEmitter(AsmEmitter):
         self.printer.println("")
 
 
-
-
 """
 RiscvAsmEmitter: an SubroutineEmitter for RiscV
 """
+
 
 class RiscvSubroutineEmitter(SubroutineEmitter):
     def __init__(self, emitter: RiscvAsmEmitter, info: SubroutineInfo) -> None:

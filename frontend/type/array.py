@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Optional
+
 from .builtin_type import INT
 from .type import DecafType
 
@@ -16,7 +18,7 @@ Some examples:
 
 
 class ArrayType(DecafType):
-    def __init__(self, base: DecafType, length: int) -> None:
+    def __init__(self, base: DecafType, length: Optional[int]) -> None:
         super().__init__()
         self.base = base
         self.length = length
@@ -50,7 +52,7 @@ class ArrayType(DecafType):
     def __eq__(self, o: object) -> bool:
         if (
             isinstance(o, type(self))
-            and o.length == self.length
+            and (self.length is None or o.length is None or o.length == self.length)
             and o.base == self.base
         ):
             return True
@@ -61,7 +63,7 @@ class ArrayType(DecafType):
         return f"{self.full_indexed}{self._indexes}"
 
     @classmethod
-    def multidim(cls, base: DecafType, *dims: int) -> ArrayType:
+    def multidim(cls, base: DecafType, *dims: Optional[int]) -> ArrayType:
         "To quickly generate a high-dimension array."
         if dims:
             return cls(cls.multidim(base, *dims[1:]), dims[0])

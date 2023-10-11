@@ -175,6 +175,29 @@ def p_function_param(p):
     p[0] = Parameter(p[1], p[2])
 
 
+def p_function_param_array(p):
+    """
+    param : array_param
+    """
+    p[0] = ArrayParameter(p[1])
+
+
+def p_function_param_array_single(p):
+    """
+    array_param : type Identifier LBracket RBracket
+        | type Identifier LBracket Integer RBracket
+    """
+    p[0] = ArrayDeclaring(p[1], p[2])
+
+
+def p_function_param_array_multi(p):
+    """
+    array_param : array_param LBracket Integer RBracket
+    """
+    p[1].append(p[3])
+    p[0] = p[1]
+
+
 def p_block(p):
     """
     block : block block_item
@@ -316,6 +339,35 @@ def p_declaration_array_multi(p):
     """
     p[1].append(p[3])
     p[0] = p[1]
+
+
+def p_declaration_array_init(p):
+    """
+    declaration : array_decl Assign LBrace array_init RBrace
+    """
+    p[0] = ArrayDeclaration(p[1], p[4])
+
+
+def p_array_init_empty(p):
+    """
+    array_init : empty
+    """
+    p[0] = ArrayInit()
+
+
+def p_array_init_single(p):
+    """
+    array_init : expression
+    """
+    p[0] = ArrayInit(p[1])
+
+
+def p_array_init_multi(p):
+    """
+    array_init : array_init Comma expression
+    """
+    p[0] = p[1]
+    p[0].append(p[3])
 
 
 def p_declaration_init(p):
