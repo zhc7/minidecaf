@@ -14,14 +14,15 @@ allocatableRegs: all the regs that can used in reg alloc
  callerSaveRegs: all the caller save regs that used in reg alloc
 
         selectInstr: select asm Instr according to the TAC
-     emitSubroutine: return a new asmEmitter that used for emitting the asm code for a new fuction
+     emitSubroutine: return a new asmEmitter that used for emitting the asm code for a new function
 """
 
 
 class AsmEmitter(ABC):
-    def __init__(self, allocatableRegs: list[Reg], callerSaveRegs: list[Reg]) -> None:
+    def __init__(self, allocatableRegs: list[Reg], callerSaveRegs: list[Reg], calleeSaveRegs) -> None:
         self.allocatableRegs = allocatableRegs
         self.callerSaveRegs = callerSaveRegs
+        self.calleeSaveRegs = calleeSaveRegs
         self.printer = AsmCodePrinter()
 
     @abstractmethod

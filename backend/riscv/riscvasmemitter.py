@@ -20,8 +20,9 @@ class RiscvAsmEmitter(AsmEmitter):
         self,
         allocatableRegs: list[Reg],
         callerSaveRegs: list[Reg],
+        calleeSaveRegs: list[Reg],
     ) -> None:
-        super().__init__(allocatableRegs, callerSaveRegs)
+        super().__init__(allocatableRegs, callerSaveRegs, calleeSaveRegs)
         # the start of the asm code
         # int step10, you need to add the declaration of global var here
         self.printer.println(".text")
