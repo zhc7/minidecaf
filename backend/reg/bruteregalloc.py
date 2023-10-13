@@ -103,7 +103,7 @@ class BruteRegAlloc(RegAlloc):
 
                 # 2. save callerSave regs
                 for reg in Riscv.CallerSaved:
-                    if reg.occupied:
+                    if reg.occupied and reg.temp.index in loc.liveOut:
                         subEmitter.emitStoreToStack(reg)
 
                 # 3. call
@@ -128,7 +128,7 @@ class BruteRegAlloc(RegAlloc):
 
                 # 5. restore callerSave regs
                 for reg in Riscv.CallerSaved:
-                    if reg.occupied:
+                    if reg.occupied and reg.temp.index in loc.liveOut:
                         subEmitter.emitLoadFromStack(reg, reg.temp)
 
                 if bind2A0:
