@@ -139,7 +139,10 @@ class BruteRegAlloc(RegAlloc):
         # 1. prepare params
         for i in range(min(len(instr.srcs), 8)):
             dst = Riscv.ArgRegs[i]
-            if dst.temp != instr.srcs[i]:
+            src = instr.srcs[i]
+            if isinstance(src, Reg):
+                subEmitter.emitNative(Riscv.Move(dst, src).toNative([dst], [src]))
+            elif dst.temp != src:
                 if dst.occupied and dst.temp.index in loc.liveIn:
                     self.spill(dst, subEmitter)
                 subEmitter.emitLoadFromStack(dst, instr.srcs[i])
