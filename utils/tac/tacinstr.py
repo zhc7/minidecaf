@@ -1,11 +1,9 @@
-from enum import Enum, auto, unique
-from typing import Any, Optional, Union, List
+from typing import Optional, List
 
-from utils.label.label import Label
 from utils.label.funclabel import FuncLabel
+from utils.label.label import Label
 from utils.tac.nativeinstr import NativeInstr
 from utils.tac.reg import Reg
-
 from .tacop import *
 from .tacvisitor import TACVisitor
 from .temp import Temp

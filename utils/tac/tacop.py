@@ -23,6 +23,7 @@ class TacUnaryOp(Enum):
     LOGIC_NOT = auto()
     BIT_NOT = auto()
 
+
 # Kinds of binary operations.
 @unique
 class TacBinaryOp(Enum):

@@ -1,10 +1,8 @@
-from typing import Sequence, Tuple
-
 from backend.asmemitter import AsmEmitter
 from utils.error import IllegalArgumentException
-from utils.label.label import Label, LabelKind
+from utils.label.label import LabelKind
 from utils.riscv import Riscv, RvBinaryOp, RvUnaryOp
-from utils.tac.reg import Reg, Imm
+from utils.tac.reg import Imm
 from utils.tac.tacfunc import TACFunc
 from utils.tac.tacinstr import *
 from utils.tac.tacvar import TACVar
@@ -23,14 +21,15 @@ class RiscvAsmEmitter(AsmEmitter):
         self,
         allocatableRegs: list[Reg],
         callerSaveRegs: list[Reg],
+        calleeSaveRegs: list[Reg],
     ) -> None:
-        super().__init__(allocatableRegs, callerSaveRegs)
+        super().__init__(allocatableRegs, callerSaveRegs, calleeSaveRegs)
         # the start of the asm code
         # int step10, you need to add the declaration of global var here
 
     # transform tac instrs to RiscV instrs
     # collect some info which is saved in SubroutineInfo for SubroutineEmitter
-    def selectInstr(self, func: TACFunc) -> tuple[list[str], SubroutineInfo]:
+    def selectInstr(self, func: TACFunc) -> tuple[list[TACInstr], SubroutineInfo]:
 
         selector: RiscvAsmEmitter.RiscvInstrSelector = (
             RiscvAsmEmitter.RiscvInstrSelector(func.entry)
@@ -40,13 +39,13 @@ class RiscvAsmEmitter(AsmEmitter):
 
         info = SubroutineInfo(func.entry)
 
-        return (selector.seq, info)
+        return selector.seq, info
 
     # use info to construct a RiscvSubroutineEmitter
     def emitSubroutine(self, info: SubroutineInfo):
         return RiscvSubroutineEmitter(self, info)
 
-    # return all the string stored in asmcodeprinter
+    # return all the string stored in asm code printer
     def emitEnd(self):
         return self.printer.close()
 
@@ -193,7 +192,6 @@ class RiscvAsmEmitter(AsmEmitter):
         self.printer.printSection("global", "main")
         self.printer.println("")
 
-
 """
 RiscvAsmEmitter: an SubroutineEmitter for RiscV
 """
@@ -225,7 +223,7 @@ class RiscvSubroutineEmitter(SubroutineEmitter):
 
     def readParam(self, params: List[Temp]) -> None:
         for i, param in enumerate(params):
-            self.offsets[param] = self.nextLocalOffset + 4 * i
+            self.offsets[param.index] = self.nextLocalOffset + 4 * i
 
     def prepareParam(self, src: Reg) -> None:
         self.param_buf.append(Riscv.NativeStoreWord(src, Riscv.SP, self.nextParamOffset))
@@ -248,8 +246,8 @@ class RiscvSubroutineEmitter(SubroutineEmitter):
             self.nextParamOffset = 0
 
     # store some temp to stack
-    # usually happen when reaching the end of a basicblock
-    # in step9, you need to think about the fuction parameters here
+    # usually happen when reaching the end of a basic block
+    # in step9, you need to think about the function parameters here
     def emitStoreToStack(self, src: Reg) -> None:
         if src.temp.index not in self.offsets:
             self.offsets[src.temp.index] = self.nextLocalOffset
@@ -260,7 +258,7 @@ class RiscvSubroutineEmitter(SubroutineEmitter):
 
     # load some temp from stack
     # usually happen when using a temp which is stored to stack before
-    # in step9, you need to think about the fuction parameters here
+    # in step9, you need to think about the function parameters here
     def emitLoadFromStack(self, dst: Reg, src: Temp):
         if src.index not in self.offsets:
             raise IllegalArgumentException()
@@ -270,13 +268,12 @@ class RiscvSubroutineEmitter(SubroutineEmitter):
             )
 
     # add a NativeInstr to buf
-    # when calling the fuction emitEnd, all the instr in buf will be transformed to RiscV code
+    # when calling the function emitEnd, all the instr in buf will be transformed to RiscV code
     def emitNative(self, instr: NativeInstr):
         self.buf.append(instr)
 
     def emitLabel(self, label: Label):
         self.buf.append(Riscv.RiscvLabel(label).toNative([], []))
-
 
     def emitEnd(self):
         self.printer.printComment("start of prologue")
@@ -306,7 +303,7 @@ class RiscvSubroutineEmitter(SubroutineEmitter):
         # in step9, you need to think about how to pass the parameters here
         # you can use the stack or regs
 
-        # using asmcodeprinter to output the RiscV code
+        # using asm code printer to output the RiscV code
         for instr in self.buf:
             self.printer.printInstr(instr)
 
