@@ -28,6 +28,7 @@ because we can remove all the GlobalTemp in selectInstr process
 6. allocRegFor：根据数据流决定为当前 Temp 分配哪一个寄存器
 """
 
+
 class BruteRegAlloc(RegAlloc):
     def __init__(self, emitter: RiscvAsmEmitter) -> None:
         super().__init__(emitter)
@@ -63,7 +64,7 @@ class BruteRegAlloc(RegAlloc):
         for reg in self.emitter.allocatableRegs:
             reg.occupied = False
 
-        # in step9, you may need to think about how to store callersave regs here
+        # in step9, you may need to think about how to store caller save regs here
         for loc in bb.allSeq():
             subEmitter.emitComment(str(loc.instr))
 
@@ -176,7 +177,7 @@ class BruteRegAlloc(RegAlloc):
             return self.bindings[temp.index]
 
         for reg in self.emitter.allocatableRegs:
-            if (not reg.occupied) or (not reg.temp.index in live):
+            if (not reg.occupied) or (reg.temp.index not in live):
                 subEmitter.emitComment(
                     "  allocate {} to {}  (read: {}):".format(
                         str(temp), str(reg), str(isRead)

@@ -3,7 +3,7 @@ from backend.dataflow.basicblock import BasicBlock
 """
 CFG: Control Flow Graph
 
-nodes: sequence of basicblock
+nodes: sequence of basic block
 edges: sequence of edge(u,v), which represents after block u is executed, block v may be executed
 links: links[u][0] represent the Prev of u, links[u][1] represent the Succ of u,
 """
@@ -41,20 +41,20 @@ class CFG:
     def isReachable(self, node: BasicBlock):
         return node in self.reachable
 
-    def getBlock(self, id):
-        return self.nodes[id]
+    def getBlock(self, index):
+        return self.nodes[index]
 
-    def getPrev(self, id):
-        return self.links[id][0]
+    def getPrev(self, index):
+        return self.links[index][0]
 
-    def getSucc(self, id):
-        return self.links[id][1]
+    def getSucc(self, index):
+        return self.links[index][1]
 
-    def getInDegree(self, id):
-        return len(self.links[id][0])
+    def getInDegree(self, index):
+        return len(self.links[index][0])
 
-    def getOutDegree(self, id):
-        return len(self.links[id][1])
+    def getOutDegree(self, index):
+        return len(self.links[index][1])
 
     def iterator(self):
         return iter(self.nodes)

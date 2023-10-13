@@ -6,7 +6,7 @@ from utils.label.label import Label
 
 """
 BlockKind
-depend on the last instr of the basicblock
+depend on the last instr of the basic block
 """
 
 
@@ -27,10 +27,10 @@ Sequence of instrs executed sequentially (from baidu)
 label: the label of the block, which will be used in CfgBuilder
  locs: sequence of instrs
 
- define: the temps definded in this basicblock
-liveUse: the temps used in this basicblock before it's redefine
- liveIn: the active temps in the start of the basicblock
-liveOut: the active temps in the end of the basicblock
+ define: the temps defined in this basic block
+liveUse: the temps used in this basic block before it's redefine
+ liveIn: the active temps in the start of the basic block
+liveOut: the active temps in the end of the basic block
 """
 
 

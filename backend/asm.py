@@ -9,6 +9,7 @@ from utils.tac.tacprog import TACProg
 Asm: we use it to generate all the asm code for the program
 """
 
+
 class Asm:
     def __init__(self, emitter: RiscvAsmEmitter, regAlloc: BruteRegAlloc) -> None:
         self.emitter = emitter

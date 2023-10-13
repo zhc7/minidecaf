@@ -1,6 +1,5 @@
 from backend.dataflow.basicblock import BasicBlock
 from backend.dataflow.cfg import CFG
-from utils.tac.temp import Temp
 
 """
 LivenessAnalyzer: do the liveness analysis according to the CFG
@@ -39,22 +38,24 @@ class LivenessAnalyzer:
         for bb in graph.nodes:
             self.analyzeLivenessForEachLocIn(bb)
 
-    def computeDefAndLiveUseFor(self, bb: BasicBlock):
+    @staticmethod
+    def computeDefAndLiveUseFor(bb: BasicBlock):
         bb.define = set()
         bb.liveUse = set()
         for loc in bb.iterator():
             for read in loc.instr.getRead():
-                if not read in bb.define:
+                if read not in bb.define:
                     bb.liveUse.add(read)
             bb.define.update(loc.instr.getWritten())
 
-    def analyzeLivenessForEachLocIn(self, bb: BasicBlock):
-        liveOut = bb.liveOut.copy()
+    @staticmethod
+    def analyzeLivenessForEachLocIn(bb: BasicBlock):
+        living = bb.liveOut.copy()
         for loc in bb.backwardIterator():
-            loc.liveOut = liveOut.copy()
+            loc.liveOut = living.copy()
 
             for v in loc.instr.getWritten():
-                liveOut.discard(v)
+                living.discard(v)
 
-            liveOut.update(loc.instr.getRead())
-            loc.liveIn = liveOut.copy()
+            living.update(loc.instr.getRead())
+            loc.liveIn = living.copy()
