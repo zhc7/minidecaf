@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from frontend.scope.scope import Scope
-
 from .symbol import *
 
 """

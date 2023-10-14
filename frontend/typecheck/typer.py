@@ -1,10 +1,5 @@
-from typing import Protocol, TypeVar
-
-from frontend.ast.node import Node
 from frontend.ast.tree import *
 from frontend.ast.visitor import Visitor
-from frontend.scope.globalscope import GlobalScope
-from frontend.scope.scope import Scope
 from frontend.symbol.funcsymbol import FuncSymbol
 from frontend.type.array import ArrayType
 from utils.error import *

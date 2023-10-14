@@ -6,20 +6,18 @@ Modify this file if you want to add a new AST node.
 
 from __future__ import annotations
 
+from abc import ABC
 from array import ArrayType
-from symtable import Symbol
-from typing import Any, Generic, Optional, TypeVar, Union, List
+from typing import Generic, Optional, TypeVar, Union, List
 
 from frontend.type import INT, DecafType, ArrayType
 from utils import T, U
 from utils.error import DecafDeclConflictError
-
 from .node import NULL, BinaryOp, Node, UnaryOp
 from .visitor import Visitor, accept
 from ..symbol.varsymbol import VarSymbol
 
 _T = TypeVar("_T", bound=Node)
-U = TypeVar("U", covariant=True)
 
 
 def _index_len_err(i: int, node: Node):
@@ -128,11 +126,11 @@ class Function(Node):
     """
 
     def __init__(
-        self,
-        ret_t: TypeLiteral,
-        ident: Identifier,
-        params: List[Parameter],
-        body: Optional[Block] = None,
+            self,
+            ret_t: TypeLiteral,
+            ident: Identifier,
+            params: List[Parameter],
+            body: Optional[Block] = None,
     ) -> None:
         super().__init__("function")
         self.ret_t = ret_t
@@ -155,7 +153,7 @@ class Function(Node):
         return v.visitFunction(self, ctx)
 
 
-class Statement(Node):
+class Statement(Node, ABC):
     """
     Abstract type that represents a statement.
     """
@@ -195,7 +193,7 @@ class If(Statement):
     """
 
     def __init__(
-        self, cond: Expression, then: Statement, otherwise: Optional[Statement] = None
+            self, cond: Expression, then: Statement, otherwise: Optional[Statement] = None
     ) -> None:
         super().__init__("if")
         self.cond = cond
@@ -238,11 +236,11 @@ class For(Statement):
     """
 
     def __init__(
-        self,
-        init: Union[Expression, Declaration, NULL],
-        cond: Union[Expression, NULL],
-        after: Union[Expression, NULL],
-        body: Statement,
+            self,
+            init: Union[Expression, Declaration, NULL],
+            cond: Union[Expression, NULL],
+            after: Union[Expression, NULL],
+            body: Statement,
     ) -> None:
         super().__init__("for")
         self.init = init
@@ -325,10 +323,10 @@ class Declaration(Node):
     symbol: VarSymbol
 
     def __init__(
-        self,
-        var_t: TypeLiteral,
-        ident: Identifier,
-        init_expr: Optional[Expression] = None,
+            self,
+            var_t: TypeLiteral,
+            ident: Identifier,
+            init_expr: Optional[Expression] = None,
     ) -> None:
         super().__init__("declaration")
         self.var_t = var_t
@@ -359,7 +357,7 @@ class ArrayDeclaring:
         self.lengths.append(length.value)
 
 
-class Expression(Node):
+class Expression(Node, ABC):
     """
     Abstract type that represents an evaluable expression.
     """
@@ -454,7 +452,8 @@ class Binary(Expression):
 class Assignment(Binary):
     """
     AST node of assignment expression.
-    It's actually a kind of binary expression, but it'll make things easier if we use another accept method to handle it.
+    It's actually a kind of binary expression,
+    but it'll make things easier if we use another accept method to handle it.
     """
 
     def __init__(self, lhs: Union[Identifier, ArrayIndex], rhs: Expression) -> None:
@@ -472,7 +471,7 @@ class ConditionExpression(Expression):
     """
 
     def __init__(
-        self, cond: Expression, then: Expression, otherwise: Expression
+            self, cond: Expression, then: Expression, otherwise: Expression
     ) -> None:
         super().__init__("cond_expr")
         self.cond = cond
@@ -549,7 +548,7 @@ class IntLiteral(Expression):
         return True
 
 
-class TypeLiteral(Node):
+class TypeLiteral(Node, ABC):
     """
     Abstract node type that represents a type literal like `int`.
     """
@@ -566,7 +565,7 @@ class TypeLiteral(Node):
 
 
 class TInt(TypeLiteral):
-    "AST node of type `int`."
+    """AST node of type `int`."""
 
     def __init__(self) -> None:
         super().__init__("type_int", INT)
@@ -585,6 +584,7 @@ class TArray(TypeLiteral):
     """
     AST node of array types
     """
+
     def __init__(self, _type: ArrayType):
         super().__init__("type_array", _type)
 
@@ -620,9 +620,9 @@ class ArrayDeclaration(Declaration):
     """
 
     def __init__(
-        self,
-        declaring: ArrayDeclaring,
-        init: Optional[ArrayInit] = None,
+            self,
+            declaring: ArrayDeclaring,
+            init: Optional[ArrayInit] = None,
     ) -> None:
         var_t = ArrayType.multidim(declaring.var_t.type, *declaring.lengths)
         var_t = TArray(var_t)
@@ -634,6 +634,7 @@ class ArrayParameter(Parameter):
     """
     AST node that represents a function parameter.
     """
+
     def __init__(self, declaring: ArrayDeclaring) -> None:
         var_t = ArrayType.multidim(declaring.var_t.type, *declaring.lengths)
         var_t = TArray(var_t)

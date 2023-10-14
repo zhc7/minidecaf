@@ -1,7 +1,6 @@
-from abc import ABC, abstractmethod
 from enum import Enum, auto, unique
-
 from typing import Optional
+
 from frontend.symbol.symbol import Symbol
 
 """
@@ -40,7 +39,7 @@ class Scope:
     # To check if this is a global scope.
     def isGlobalScope(self) -> bool:
         return False
-    
+
     # To get a symbol if declared in the scope
     def lookup(self, name: str, strict: bool = False) -> Optional[Symbol]:
         if strict:

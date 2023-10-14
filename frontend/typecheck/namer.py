@@ -1,15 +1,9 @@
-from typing import Protocol, TypeVar, cast
-
-from frontend.ast.node import Node, NullType
 from frontend.ast.tree import *
-from frontend.ast.visitor import RecursiveVisitor, Visitor
+from frontend.ast.visitor import Visitor
 from frontend.scope.globalscope import GlobalScope
 from frontend.scope.scope import Scope, ScopeKind
 from frontend.symbol.funcsymbol import FuncSymbol
-from frontend.symbol.symbol import Symbol
 from frontend.symbol.varsymbol import VarSymbol
-from frontend.type.array import ArrayType
-from frontend.type.type import DecafType
 from utils.error import *
 from utils.riscv import MAX_INT
 
@@ -90,7 +84,7 @@ class Namer(Visitor[Scope, None]):
         stmt.then.accept(self, ctx)
 
         # check if the else branch exists
-        if not stmt.otherwise is NULL:
+        if stmt.otherwise != NULL:
             stmt.otherwise.accept(self, ctx)
 
     def visitWhile(self, stmt: While, ctx: Scope) -> None:
@@ -134,7 +128,9 @@ class Namer(Visitor[Scope, None]):
         4. If there is an initial value, visit it.
         """
         if ctx.lookup(decl.ident.value, True) is None:
-            var_symbol = VarSymbol(decl.ident.value, decl.var_t.type, ctx.isGlobalScope())
+            var_symbol = VarSymbol(
+                decl.ident.value, decl.var_t.type, ctx.isGlobalScope()
+            )
             ctx.declare(var_symbol)
             decl.symbol = var_symbol
             if decl.init_expr is not NULL:

@@ -18,10 +18,10 @@ RiscvAsmEmitter: an AsmEmitter for RiscV
 
 class RiscvAsmEmitter(AsmEmitter):
     def __init__(
-        self,
-        allocatableRegs: list[Reg],
-        callerSaveRegs: list[Reg],
-        calleeSaveRegs: list[Reg],
+            self,
+            allocatableRegs: list[Reg],
+            callerSaveRegs: list[Reg],
+            calleeSaveRegs: list[Reg],
     ) -> None:
         super().__init__(allocatableRegs, callerSaveRegs, calleeSaveRegs)
         # the start of the asm code
@@ -191,6 +191,7 @@ class RiscvAsmEmitter(AsmEmitter):
         self.printer.printSection("text")
         self.printer.printSection("global", "main")
         self.printer.println("")
+
 
 """
 RiscvAsmEmitter: an SubroutineEmitter for RiscV

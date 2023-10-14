@@ -2,7 +2,6 @@ from typing import Optional
 
 from utils.label.label import Label
 from utils.tac.reg import Reg
-
 from .tacop import InstrKind
 
 
@@ -25,6 +24,7 @@ class NativeInstr:
         assert self.instrString is not None
         return self.instrString
 
+    @staticmethod
     def nativeComment(comment: str):
         return NativeInstr(InstrKind.SEQ, [], [], None, comment)
 

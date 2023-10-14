@@ -7,8 +7,8 @@ and a helper type `NullType` along with its instance `NULL`.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from enum import Enum, auto, unique
-from typing import Any, Optional, TypeVar, Union
+from enum import Enum, unique
+from typing import Any, Optional, TypeVar
 
 from .visitor import Visitor
 
@@ -147,7 +147,7 @@ class Node(ABC):
     def __str__(self) -> str:
         """
         Recursively stringify itself and its children.
-        Override this method when necesssary.
+        Override this method when necessary.
         """
         if len(self) == 0:
             return self.name

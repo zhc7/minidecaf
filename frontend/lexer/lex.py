@@ -57,13 +57,13 @@ t_Assign = "="
 
 
 def t_Integer(t):
-    r"[0-9]+"  # can be accessed from `t_Interger.__doc__`
+    r"""[0-9]+"""  # can be accessed from `t_Integer.__doc__`
     t.value = int(t.value)
     return t
 
 
 def t_Identifier(t):
-    r"[a-zA-Z_][0-9a-zA-Z_]*"
+    r"""[a-zA-Z_][0-9a-zA-Z_]*"""
     t.type = reserved.get(t.value, "Identifier")
     return t
 
@@ -84,7 +84,7 @@ tokens = tuple(
 
 
 def _escape():
-    "Don't care about this"
+    """Don't care about this"""
 
     import re
 

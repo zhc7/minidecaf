@@ -1,4 +1,5 @@
-from typing import Final, Optional, List
+from enum import Enum, auto, unique
+from typing import Final, List
 
 from utils.label.funclabel import FuncLabel
 from utils.label.label import Label, LabelKind
@@ -7,8 +8,6 @@ from utils.tac.reg import Reg
 from utils.tac.tacinstr import TACInstr
 from utils.tac.tacop import InstrKind
 from utils.tac.temp import Temp
-
-from enum import Enum, auto, unique
 
 WORD_SIZE: Final[int] = 4  # in bytes
 MAX_INT: Final[int] = 0x7FFF_FFFF
@@ -20,6 +19,7 @@ class RvUnaryOp(Enum):
     SNEZ = auto()
     SEQZ = auto()
     NOT = auto()
+
 
 @unique
 class RvBinaryOp(Enum):
@@ -37,7 +37,6 @@ class RvBinaryOp(Enum):
 
 
 class Riscv:
-
     MEMSET = FuncLabel("__riscv_memset__")
     ZERO = Reg(0, "x0")  # always zero
     RA = Reg(1, "ra")  # return address
@@ -86,6 +85,7 @@ class Riscv:
     FMT2 = "{}, {}"
     FMT3 = "{}, {}, {}"
     FMT_OFFSET = "{}, {}({})"
+
     # Todo FMT4
 
     class JumpToEpilogue(TACInstr):

@@ -9,7 +9,6 @@ from backend.subroutineemitter import SubroutineEmitter
 from backend.subroutineinfo import SubroutineInfo
 from utils.riscv import Riscv
 from utils.tac.reg import Reg
-from utils.tac.tacop import InstrKind
 from utils.tac.temp import Temp
 
 """
@@ -194,7 +193,7 @@ class BruteRegAlloc(RegAlloc):
             self.bind(instr.dsts[0], Riscv.A0)
 
     def allocRegFor(
-        self, temp: Temp, isRead: bool, live: set[int], subEmitter: SubroutineEmitter
+            self, temp: Temp, isRead: bool, live: set[int], subEmitter: SubroutineEmitter
     ):
         if temp.index in self.bindings:
             return self.bindings[temp.index]

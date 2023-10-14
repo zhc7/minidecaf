@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import Optional
 
-from .builtin_type import INT
 from .type import DecafType
 
 """
@@ -36,17 +35,17 @@ class ArrayType(DecafType):
 
     @property
     def size(self) -> int:
-        "To get the full size of an array, e.g. size(int[2][3]) == 2 * 3 * WORD_SIZE."
+        """To get the full size of an array, e.g. size(int[2][3]) == 2 * 3 * WORD_SIZE."""
         return self.length * self.base.size
 
     @property
     def full_indexed(self) -> DecafType:
-        "To get the ultimate type of an array, e.g. full_indexed(int[2][3]) == int."
+        """To get the ultimate type of an array, e.g. full_indexed(int[2][3]) == int."""
         return self.base.full_indexed if isinstance(self.base, ArrayType) else self.base
 
     @property
     def dim(self) -> int:
-        "To get the dimension of an array."
+        """To get the dimension of an array."""
         return self.base.dim + 1 if isinstance(self.base, ArrayType) else 1
 
     def __eq__(self, o: object) -> bool:
@@ -64,7 +63,7 @@ class ArrayType(DecafType):
 
     @classmethod
     def multidim(cls, base: DecafType, *dims: Optional[int]) -> ArrayType:
-        "To quickly generate a high-dimension array."
+        """To quickly generate a high-dimension array."""
         if dims:
             return cls(cls.multidim(base, *dims[1:]), dims[0])
         else:

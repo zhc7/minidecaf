@@ -1,5 +1,3 @@
-from typing import Any, Optional, Union
-
 from .tacfunc import TACFunc
 from .tacvar import TACVar
 

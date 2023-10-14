@@ -9,7 +9,7 @@ from utils.tac.reg import Reg, Temp
 from .asmemitter import AsmEmitter
 
 """
-SubroutineEmitter: emit asm code for a fuction
+SubroutineEmitter: emit asm code for a function
 
 printer: the same as AsmEmitter, which we use to output the asm code
    info: subroutineInfo for the function

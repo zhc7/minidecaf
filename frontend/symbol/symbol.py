@@ -15,6 +15,7 @@ class Symbol(ABC):
     def __init__(self, name: str, type: DecafType) -> None:
         self.name = name
         self.type = type
+        self.definedIn = None
 
     @abstractmethod
     def __str__(self) -> str:
