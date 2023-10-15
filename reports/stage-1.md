@@ -53,7 +53,7 @@ step1中代码都已经提供，我根据文档阅读了源码，了解了本编
 ### step 1
 
 1. 可以编译。因为目前namer和typer只对program进行检查不进行更改，且此程序符合检查的所有要求，因此可以编译。
-2. 在`frontend/typecheck/namer.py:Namer.visitprogram`中检查。报`DecafNoMainFuncError`。
+2. 如果没有return语句，则会在`frontend/tacgen/tacgen.py:113`中被自动添加一个，并在`backend/riscv/riscvasmemitter.py:70`中被将返回值默认置为零。如果有return语句但没有具体的返回值，则有悖于`ply_parser.py`中定义的文法，会在此处报Syntax error。
 3. 三种运算符服务于三个不同的步骤，第一个服务于生成抽象语法树的过程，其值代表的是Minidecaf语法中规定的一元运算符。
 第二个服务于生成三地址码过程，其值代表的是三地址码中的一元运算符。
 第三个服务于生成汇编的过程，其值代表的是RISCV汇编中的一元运算汇编指令。
